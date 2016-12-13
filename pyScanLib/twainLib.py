@@ -1,6 +1,7 @@
 import twain
-import Image
+from PIL import Image
 from StringIO import StringIO
+import logging
 
 #======================================================================
 #	Name:	    twainLib
@@ -123,6 +124,31 @@ class twainLib(object):
             return Image.open(StringIO(image))
         except:
             return False
+       
+    def scan_multi(self):
+        """
+        Scan and return PIL object if success else return empty array
+        """
+        if self.scanner == None:
+            raise ScannerNotSet
+
+        self.scanner.RequestAcquire(0, 1)
+        info = self.scanner.GetImageInfo()
+        images = []
+        handles = []
+        try:
+            handle, more = self.scanner.XferImageNatively()
+            handles.append(handle)
+            for i in range(0, more):
+                handle, more = self.scanner.XferImageNatively()
+                handles.append(handle)
+            for handle in handles:
+                images.append(Image.open(StringIO(twain.DIBToBMFile(handle))))
+                twain.GlobalHandleFree(handle)
+            return images
+        except BaseException as e:
+            logging.error(e)
+            return []
 
     def closeScanner(self):
         """
