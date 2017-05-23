@@ -139,17 +139,21 @@ class twainLib(object):
         try:
             handle, more = self.scanner.XferImageNatively()
             handles.append(handle)
-            for i in range(0, more):
+        except twain.excDSTransferCancelled:
+           return []
+        while more != 0:
+            try:
                 handle, more = self.scanner.XferImageNatively()
                 handles.append(handle)
-            for handle in handles:
-                images.append(Image.open(StringIO(twain.DIBToBMFile(handle))))
-                twain.GlobalHandleFree(handle)
-            return images
-        except BaseException as e:
-            logging.error(e)
-            return []
+            except twain.excDSTransferCancelled:
+                more = 0
 
+        for handle in handles:
+            images.append(Image.open(StringIO(twain.DIBToBMFile(handle))))
+            twain.GlobalHandleFree(handle)
+
+        return images
+    
     def closeScanner(self):
         """
         Destory 'self.scanner' class of twain module generated in setScanner function
